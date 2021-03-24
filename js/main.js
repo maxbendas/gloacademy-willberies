@@ -11,7 +11,6 @@ const mySwiper = new Swiper('.swiper-container', {
 // cart
 
 const buttonCart = document.querySelector('.button-cart')
-const modalClose = document.querySelector('.modal-close')
 const modalCart = document.querySelector('#modal-cart')
 
 const openModal = () => {
@@ -23,12 +22,10 @@ const closeModal = () => {
 }
 
 buttonCart.addEventListener('click', openModal)
-modalClose.addEventListener('click', closeModal)
-
-// DZ
 
 modalCart.addEventListener('click', (e) => {
-    if (!e.target.closest('.modal')) {
+    const target = e.target
+    if (target.classList.contains('overlay') || target.classList.contains('modal-close')) {
         closeModal()
     }
 })
@@ -111,7 +108,23 @@ navigationLinks.forEach((link)=>{
         e.preventDefault()
         const field = link.dataset.field
         const value = link.textContent
-        console.log(field, value)
-        filterCards(field, value)
+        if (value === 'All'){
+            getGoods().then(renderCards)
+        }else{
+            filterCards(field, value)
+        }
     })
+})
+
+const btnAccessories = document.querySelector('.accessories')
+const btnClothing = document.querySelector('.clothing')
+
+btnAccessories.addEventListener('click', (e)=>{
+    e.preventDefault()
+    filterCards('category', 'Accessories')
+})
+
+btnClothing.addEventListener('click', (e)=>{
+    e.preventDefault()
+    filterCards('category', 'Clothing')
 })
