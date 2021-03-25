@@ -19,30 +19,32 @@ const btnAccessories = document.querySelector('.accessories')
 const btnClothing = document.querySelector('.clothing')
 const cartTableGoods = document.querySelector('.cart-table__goods')
 const cardTableTotal = document.querySelector('.card-table__total')
+const cartCount = document.querySelector('.cart-count')
+const clearCart = document.querySelector('.clear-cart')
 
-const getGoods = async () => {
-    const result = await fetch('db/db.json')
-    if (!result.ok) {
-        throw 'Ошибочка вышла ' + result.status
+const checkGoods = () => {
+    const data = []
+    return async () => {
+        if (data.length) return data
+
+        const result = await fetch('db/db.json')
+        if (!result.ok) {
+            throw 'Ошибочка вышла ' + result.status
+        }
+        data.push(...(await result.json()))
+        return data
     }
-    return await result.json()
 }
+
+const getGoods = checkGoods()
+
 const cart = {
-    cartGoods:
-        [
-            {
-                id: '5',
-                name: "fak",
-                price: 9,
-                count: 3
-            },
-            {
-                id: '6',
-                name: "faaak",
-                price: 19,
-                count: 5
-            }
-        ],
+    cartGoods: [],
+    countQuantity() {
+        cartCount.textContent = this.cartGoods.reduce((sum, item) => {
+            return sum + item.count
+        }, 0)
+    },
     renderCart() {
         cartTableGoods.textContent = ''
         this.cartGoods.forEach(({id, name, price, count}) => {
@@ -60,13 +62,21 @@ const cart = {
             `
             cartTableGoods.append(trGood)
         })
+
         const totalPrice = this.cartGoods.reduce((sum, item) => {
             return sum + item.price * item.count
         }, 0)
         cardTableTotal.textContent = totalPrice + '$'
+
     },
     deleteGood(id) {
         this.cartGoods = this.cartGoods.filter(item => id !== item.id)
+        this.renderCart()
+        this.countQuantity()
+    },
+    clearCart() {
+        this.cartGoods.length = 0
+        this.countQuantity()
         this.renderCart()
     },
     plusGood(id) {
@@ -77,42 +87,46 @@ const cart = {
             }
         }
         this.renderCart()
+        this.countQuantity()
     },
     minusGood(id) {
         for (const item of this.cartGoods) {
             if (item.id === id) {
-                if (item.count <= 1) {
-                    this.deleteGood(id)
-                } else {
-                    item.count--
-                }
+                item.count--
+                if (!item.count) this.deleteGood(id)
                 break
             }
         }
         this.renderCart()
+        this.countQuantity()
     },
-    addCartGoods(id){
-        const goodItem = this.cartGoods.find(item=>item.id===id)
-        if (goodItem){
+    addCartGoods(id) {
+        const goodItem = this.cartGoods.find(item => item.id === id)
+        if (goodItem) {
             this.plusGood(id)
-        }else{
+        } else {
             getGoods()
-                .then(data=>data.find(item=>item.id===id))
-                .then(({id, name, price})=>{
+                .then(data => data.find(item => item.id === id))
+                .then(({id, name, price}) => {
                     this.cartGoods.push({
                         id,
                         name,
                         price,
-                        count:1
+                        count: 1
                     })
+                    this.countQuantity()
                 })
         }
     }
 }
 
-document.body.addEventListener('click', e=>{
+clearCart.addEventListener('click', ()=>{
+    cart.clearCart()
+})
+
+document.body.addEventListener('click', e => {
     const addToCart = e.target.closest('.add-to-cart')
-    if(addToCart){
+    if (addToCart) {
         cart.addCartGoods(addToCart.dataset.id)
     }
 })
