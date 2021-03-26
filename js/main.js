@@ -241,3 +241,37 @@ btnClothing.addEventListener('click', (e) => {
     e.preventDefault()
     filterCards('category', 'Clothing')
 })
+
+//day 4
+
+const modalForm = document.querySelector('.modal-form')
+
+const postData = dataUser=>fetch('server.php',{
+    method:'POST',
+    body:dataUser,
+})
+
+modalForm.addEventListener('submit', e=>{
+    e.preventDefault()
+
+    const formData = new FormData(modalForm)
+    formData.append('cart', JSON.stringify((cart.cartGoods)))
+
+    postData(formData)
+        .then(response=>{
+            if(!response.ok){
+                throw new Error(response.status)
+            }
+            alert('Ваш заказ принят')
+            console.log(response.statusText)
+        })
+        .catch(err=>{
+            alert('Error')
+            console.error(err)
+        })
+        .finally(()=>{
+            closeModal()
+            modalForm.reset()
+            cart.clearCart()
+        })
+})
