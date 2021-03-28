@@ -39,11 +39,18 @@ const checkGoods = () => {
 const getGoods = checkGoods()
 
 const cart = {
-    cartGoods: [],
+    cartGoods: JSON.parse(localStorage.getItem('cartWillberries')) || [],
+    updateLocalStorage() {
+        localStorage.setItem('cartWillberries', JSON.stringify(this.cartGoods))
+    },
     countQuantity() {
-        cartCount.textContent = this.cartGoods.reduce((sum, item) => {
+        const count = this.cartGoods.reduce((sum, item) => {
             return sum + item.count
         }, 0)
+        cartCount.textContent = count ? count : ''
+    },
+    getCountCartGoods() {
+        return this.cartGoods.length
     },
     renderCart() {
         cartTableGoods.textContent = ''
@@ -72,10 +79,12 @@ const cart = {
     deleteGood(id) {
         this.cartGoods = this.cartGoods.filter(item => id !== item.id)
         this.renderCart()
+        this.updateLocalStorage()
         this.countQuantity()
     },
     clearCart() {
         this.cartGoods.length = 0
+        this.updateLocalStorage()
         this.countQuantity()
         this.renderCart()
     },
@@ -86,6 +95,7 @@ const cart = {
                 break
             }
         }
+        this.updateLocalStorage()
         this.renderCart()
         this.countQuantity()
     },
@@ -97,6 +107,7 @@ const cart = {
                 break
             }
         }
+        this.updateLocalStorage()
         this.renderCart()
         this.countQuantity()
     },
@@ -114,13 +125,14 @@ const cart = {
                         price,
                         count: 1
                     })
+                    this.updateLocalStorage()
                     this.countQuantity()
                 })
         }
     }
 }
 
-clearCart.addEventListener('click', ()=>{
+clearCart.addEventListener('click', () => {
     cart.clearCart()
 })
 
@@ -246,32 +258,66 @@ btnClothing.addEventListener('click', (e) => {
 
 const modalForm = document.querySelector('.modal-form')
 
-const postData = dataUser=>fetch('server.php',{
-    method:'POST',
-    body:dataUser,
+const postData = dataUser => fetch('server.php', {
+    method: 'POST',
+    body: dataUser,
+    headers: {
+        'Content-Type': 'application/json'
+    }
 })
 
-modalForm.addEventListener('submit', e=>{
+const validForm = (formData) => {
+    let valid = false
+
+    for (const [, value] of formData) {
+        if (value.trim()) {
+            valid = true
+        } else {
+            valid = false
+            break
+        }
+    }
+    return valid
+}
+
+modalForm.addEventListener('submit', e => {
     e.preventDefault()
-
     const formData = new FormData(modalForm)
-    formData.append('cart', JSON.stringify((cart.cartGoods)))
 
-    postData(formData)
-        .then(response=>{
-            if(!response.ok){
-                throw new Error(response.status)
-            }
-            alert('Ваш заказ принят')
-            console.log(response.statusText)
-        })
-        .catch(err=>{
-            alert('Error')
-            console.error(err)
-        })
-        .finally(()=>{
-            closeModal()
-            modalForm.reset()
-            cart.clearCart()
-        })
+    if (validForm(formData) && cart.getCountCartGoods()) {
+        const data = {}
+
+        for (const [name, value] of formData) {
+            data[name] = value
+        }
+        data.cart = cart.cartGoods
+
+        console.log(data)
+
+        postData(JSON.stringify(data))
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(response.status)
+                }
+                alert('Ваш заказ принят')
+                console.log(response.statusText)
+            })
+            .catch(err => {
+                alert('Error')
+                console.error(err)
+            })
+            .finally(() => {
+                closeModal()
+                modalForm.reset()
+                cart.clearCart()
+            })
+    } else {
+        if (!cart.getCountCartGoods()) {
+            alert('Корзина пустая')
+        }
+        if (!validForm(formData)) {
+            alert('Заполните поля правильно')
+        }
+    }
+
 })
